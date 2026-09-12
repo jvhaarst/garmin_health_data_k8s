@@ -1,0 +1,99 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "garmin-health-data.fullname" . }}
+  labels:
+    {{- include "garmin-health-data.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.schedule | quote }}
+  {{- if .Values.timezone }}
+  timeZone: {{ .Values.timezone | quote }}
+  {{- end }}
+  successfulJobsHistoryLimit: {{ .Values.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.failedJobsHistoryLimit }}
+  {{- with .Values.startingDeadlineSeconds }}
+  startingDeadlineSeconds: {{ . }}
+  {{- end }}
+  # One writer at a time: SQLite plus a ReadWriteOnce volume.
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.backoffLimit }}
+      {{- with .Values.activeDeadlineSeconds }}
+      activeDeadlineSeconds: {{ . }}
+      {{- end }}
+      template:
+        metadata:
+          labels:
+            {{- include "garmin-health-data.selectorLabels" . | nindent 12 }}
+          {{- with .Values.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        spec:
+          restartPolicy: {{ .Values.restartPolicy }}
+          {{- with .Values.podSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: {{ .Chart.Name }}
+              image: {{ include "garmin-health-data.image" . | quote }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command:
+                - uvx
+                - --from
+                - {{ include "garmin-health-data.requirement" . | quote }}
+                - garmin
+                - extract
+                - --db-path
+                - {{ .Values.extract.dbPath | quote }}
+                {{- range .Values.extract.extraArgs }}
+                - {{ . | quote }}
+                {{- end }}
+              env:
+                # The token store path ~/.garminconnect is hardcoded in the
+                # application, so HOME is what puts it on the volume.
+                - name: HOME
+                  value: {{ .Values.home | quote }}
+                # Keep the resolved environment on the volume; without this every
+                # weekly run re-downloads the package and its dependencies.
+                - name: UV_CACHE_DIR
+                  value: {{ printf "%s/.cache/uv" .Values.home | quote }}
+                {{- if .Values.disableVersionCheck }}
+                - name: GARMIN_NO_VERSION_CHECK
+                  value: "1"
+                {{- end }}
+              volumeMounts:
+                - name: data
+                  mountPath: {{ .Values.home | quote }}
+              {{- with .Values.securityContext }}
+              securityContext:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              {{- with .Values.resources }}
+              resources:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+          volumes:
+            - name: data
+              {{- if .Values.persistence.enabled }}
+              persistentVolumeClaim:
+                claimName: {{ include "garmin-health-data.claimName" . }}
+              {{- else }}
+              # No volume: the database and the tokens die with the pod, so every
+              # run re-authenticates and re-extracts. Useful only for a smoke test.
+              emptyDir: {}
+              {{- end }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^garmin-health-data/Chart\\.yaml$"],
+      "matchStrings": [
+        "appVersion:\\s*\"(?<currentValue>v?[\\d.]+)\""
+      ],
+      "depNameTemplate": "garmin-health-data",
+      "datasourceTemplate": "pypi"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["^garmin-health-data/values\\.yaml$"],
+      "matchStrings": [
+        "repository: ghcr\\.io/astral-sh/uv\\n\\s+tag: (?<currentValue>\\S+)"
+      ],
+      "depNameTemplate": "ghcr.io/astral-sh/uv",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchDepNames": ["garmin-health-data"],
+      "groupName": "garmin-health-data package"
+    },
+    {
+      "matchDepNames": ["ghcr.io/astral-sh/uv"],
+      "groupName": "uv runtime image"
+    }
+  ]
+}

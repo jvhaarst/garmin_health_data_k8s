@@ -1,0 +1,108 @@
+# Default values for garmin-health-data.
+
+# The job runs the published PyPI package with uvx inside Astral's uv image, so
+# there is no image of our own to build. The package version is the chart's
+# appVersion (Renovate-managed); this is only the runtime that fetches it.
+image:
+  repository: ghcr.io/astral-sh/uv
+  tag: python3.12-bookworm-slim
+  pullPolicy: IfNotPresent
+
+# Empty = install the chart's appVersion, the single source of truth Renovate
+# bumps. Set this only to pin or override a different package version.
+packageVersion: ""
+
+# Sunday 09:00. Tokens expire after 30 days without an extract, and recovering
+# from that needs the interactive browser-ticket flow on a workstation, so the
+# schedule is deliberately far more frequent than strictly required.
+schedule: "0 9 * * 0"
+timezone: "Europe/Amsterdam"
+
+successfulJobsHistoryLimit: 3
+failedJobsHistoryLimit: 3
+restartPolicy: OnFailure
+# Retries within one scheduled run. Garmin's Cloudflare WAF rate-limits bursts,
+# so this stays low on purpose; a missed week is cheap, a hammered endpoint is
+# not.
+backoffLimit: 2
+# An hour is far more than a weekly delta needs. It exists to stop a hung run
+# from blocking the next one.
+activeDeadlineSeconds: 3600
+# Let a run that missed its slot (cluster down, node drained) still start when
+# the cluster comes back, instead of being skipped until next week.
+startingDeadlineSeconds: 3600
+
+extract:
+  # Passed as --db-path. `garmin_files/` is created next to it.
+  dbPath: /data/garmin_data.db
+  # Extra flags, e.g. ["--start-date", "2026-09-01"] for a one-off backfill.
+  extraArgs: []
+
+# The token store path is hardcoded to ~/.garminconnect in the application, with
+# no flag or environment override, so HOME points at the volume. Tokens must be
+# writable: the client rewrites them on refresh and swallows write failures, so
+# a read-only mount would fail silently and expire at the 30-day mark.
+home: /data
+
+# The package version is pinned by the chart, so the app's own PyPI version
+# check is dead weight on every run.
+disableVersionCheck: true
+
+# SQLite database, downloaded files and the uv cache all live here. Without it
+# every run starts from an empty database and re-downloads everything.
+persistence:
+  enabled: true
+  storageClass: longhorn
+  accessMode: ReadWriteOnce
+  size: 5Gi
+  # Set to use a volume that already exists (e.g. one seeded by hand) instead of
+  # letting the chart create it.
+  existingClaim: ""
+
+# Maintenance pod: `kubectl cp` needs something running that mounts the volume,
+# and CronJob pods are gone by the time you want the database. Enable, copy,
+# disable.
+#
+# The volume is ReadWriteOnce: while this pod runs, a scheduled job can only
+# start on the same node. Leaving it enabled can therefore block the weekly run.
+shell:
+  enabled: false
+  image:
+    repository: busybox
+    tag: "1.37"
+
+# Node `ntp` is labelled memory-sufficient=false and longhorn.io/exclude=true.
+# FIT parsing is the memory-hungry part of a run, so keep it off that node.
+nodeSelector:
+  memory-sufficient: "true"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: "2"
+    memory: 1Gi
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  # Longhorn volumes come up root-owned; without this the unprivileged user
+  # cannot write the database or the token store.
+  fsGroup: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+tolerations: []
+affinity: {}
+podAnnotations: {}
+commonLabels: {}
+# Without this the objects would be named "<release>-garmin-health-data", which
+# reads as a stutter for the natural release name.
+nameOverride: ""
+fullnameOverride: "garmin-health-data"

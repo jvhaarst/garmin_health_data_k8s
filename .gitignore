@@ -1,0 +1,5 @@
+.helm-release/
+*.tgz
+*.db
+garmin_tokens.json
+.DS_Store

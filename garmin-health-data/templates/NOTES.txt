@@ -1,0 +1,33 @@
+{{ .Chart.Name }} {{ .Chart.Version }} — runs {{ include "garmin-health-data.requirement" . }} in {{ include "garmin-health-data.image" . }}
+
+Schedule: {{ .Values.schedule }}{{ if .Values.timezone }} ({{ .Values.timezone }}){{ end }}
+Database: {{ .Values.extract.dbPath }}
+Tokens:   {{ .Values.home }}/.garminconnect/<user_id>/garmin_tokens.json
+
+{{ if .Values.persistence.enabled -}}
+Data is on PVC {{ include "garmin-health-data.claimName" . }}
+({{ .Values.persistence.size }}, {{ .Values.persistence.storageClass | default "cluster default" }}), kept on uninstall.
+{{- else -}}
+WARNING: persistence is disabled. Every run starts from an empty database with
+no tokens, so it will fail at authentication.
+{{- end }}
+
+The volume must be seeded once before the first run, with tokens from a machine
+that has completed `garmin auth`:
+
+  helm upgrade --install {{ .Release.Name }} ... --set shell.enabled=true
+  POD=$(kubectl -n {{ .Release.Namespace }} get pod -l app.kubernetes.io/component=shell -o name)
+  kubectl -n {{ .Release.Namespace }} exec $POD -- mkdir -p {{ .Values.home }}/.garminconnect/<user_id>
+  kubectl -n {{ .Release.Namespace }} cp ~/.garminconnect/<user_id>/garmin_tokens.json \
+    {{ .Release.Namespace }}/${POD#pod/}:{{ .Values.home }}/.garminconnect/<user_id>/garmin_tokens.json
+  helm upgrade --install {{ .Release.Name }} ... --set shell.enabled=false
+
+Run it once now instead of waiting for the schedule:
+
+  kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "garmin-health-data.fullname" . }} {{ include "garmin-health-data.fullname" . }}-manual
+  kubectl -n {{ .Release.Namespace }} logs -f job/{{ include "garmin-health-data.fullname" . }}-manual
+
+{{ if .Values.shell.enabled -}}
+WARNING: shell.enabled is true. That pod holds the ReadWriteOnce volume, so a
+scheduled run can only start on the same node. Disable it when you are done.
+{{- end }}

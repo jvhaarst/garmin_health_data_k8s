@@ -1,0 +1,19 @@
+apiVersion: v2
+name: garmin-health-data
+description: Weekly Garmin Connect extract into a SQLite database on a persistent volume
+type: application
+version: 0.1.0
+# Tracks the garmin-health-data release on PyPI, which the CronJob runs with uvx.
+# Renovate bumps this automatically when a new version is published.
+appVersion: "2.16.0"
+keywords:
+  - garmin
+  - health
+  - sqlite
+  - cronjob
+home: https://github.com/diegoscarabelli/garmin-health-data
+sources:
+  - https://github.com/diegoscarabelli/garmin-health-data
+  - https://github.com/jvhaarst/garmin_health_data_k8s
+maintainers:
+  - name: jvhaarst
