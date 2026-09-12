@@ -69,7 +69,7 @@ shell:
   enabled: false
   image:
     repository: busybox
-    tag: "1.37"
+    tag: "1.38"
 
 # Node `ntp` is labelled memory-sufficient=false and longhorn.io/exclude=true.
 # FIT parsing is the memory-hungry part of a run, so keep it off that node.
