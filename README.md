@@ -180,6 +180,17 @@ then re-seed the volume as above.
 - **The very first push to a new repository triggered no workflow run** and the
   first chart had to be published with `gh workflow run helm-release.yaml`.
   Every push since has triggered normally, including the Renovate merge.
+- **A new chart version appears on Renovate's schedule, not immediately.**
+  Renovate sweeps each repository on its own cycle, so an upstream PyPI release
+  can take a pass or two to surface as a PR here. Nothing is wrong if Rancher
+  shows no new version straight after an upstream release.
+
+## Verified behaviour
+
+The automerge path has run end to end here: Renovate opened
+`chore(deps): update busybox docker tag to v1.38`, `lint` passed on the branch,
+Renovate merged it (`mergedBy: app/renovate`), the push published chart `0.1.2`,
+and the branch was deleted — no human step.
 
 ## Local development
 
