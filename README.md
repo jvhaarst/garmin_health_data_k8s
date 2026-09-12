@@ -62,34 +62,42 @@ hand, from a machine that has run `garmin auth`.
 
 ### Seeding the volume
 
+Flags are spelled out rather than held in shell variables: zsh does not
+word-split an unquoted parameter, so `kubectl $CTX ...` is passed as one
+argument and fails with `unknown flag: --context raspi5`.
+
 ```bash
-CTX="--context raspi5"
-NS="-n garmin"
 USER_ID=<your garmin user id>
 
 helm upgrade --install garmin garmin-health-data/garmin-health-data \
-  $NS --create-namespace --set shell.enabled=true
+  --kube-context raspi5 -n garmin --create-namespace --set shell.enabled=true
 
-POD=$(kubectl $CTX $NS get pod -l app.kubernetes.io/component=shell -o jsonpath='{.items[0].metadata.name}')
-kubectl $CTX $NS exec "$POD" -- mkdir -p "/data/.garminconnect/$USER_ID"
-kubectl $CTX $NS cp "$HOME/.garminconnect/$USER_ID/garmin_tokens.json" \
+POD=$(kubectl --context raspi5 -n garmin get pod \
+  -l app.kubernetes.io/component=shell -o jsonpath='{.items[0].metadata.name}')
+kubectl --context raspi5 -n garmin exec "$POD" -- mkdir -p "/data/.garminconnect/$USER_ID"
+kubectl --context raspi5 -n garmin cp \
+  "$HOME/.garminconnect/$USER_ID/garmin_tokens.json" \
   "garmin/$POD:/data/.garminconnect/$USER_ID/garmin_tokens.json"
 
 # Optional: carry over an existing database so the first run resumes instead of
 # starting 30 days back.
-kubectl $CTX $NS cp "$HOME/garmin/garmin_data.db" "garmin/$POD:/data/garmin_data.db"
+kubectl --context raspi5 -n garmin cp "$HOME/garmin/garmin_data.db" \
+  "garmin/$POD:/data/garmin_data.db"
 
 helm upgrade --install garmin garmin-health-data/garmin-health-data \
-  $NS --set shell.enabled=false
+  --kube-context raspi5 -n garmin --set shell.enabled=false
 ```
 
 ### Pulling the database back
 
 ```bash
-helm upgrade --install garmin garmin-health-data/garmin-health-data $NS --set shell.enabled=true
-POD=$(kubectl $CTX $NS get pod -l app.kubernetes.io/component=shell -o jsonpath='{.items[0].metadata.name}')
-kubectl $CTX $NS cp "garmin/$POD:/data/garmin_data.db" ~/garmin/garmin_data.db
-helm upgrade --install garmin garmin-health-data/garmin-health-data $NS --set shell.enabled=false
+helm upgrade --install garmin garmin-health-data/garmin-health-data \
+  --kube-context raspi5 -n garmin --set shell.enabled=true
+POD=$(kubectl --context raspi5 -n garmin get pod \
+  -l app.kubernetes.io/component=shell -o jsonpath='{.items[0].metadata.name}')
+kubectl --context raspi5 -n garmin cp "garmin/$POD:/data/garmin_data.db" ~/garmin/garmin_data.db
+helm upgrade --install garmin garmin-health-data/garmin-health-data \
+  --kube-context raspi5 -n garmin --set shell.enabled=false
 ```
 
 Disable the shell afterwards. It holds the ReadWriteOnce volume, so while it
