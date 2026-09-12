@@ -6,7 +6,9 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["^garmin-health-data/Chart\\.yaml$"],
+      "fileMatch": [
+        "^garmin-health-data/Chart\\.yaml$"
+      ],
       "matchStrings": [
         "appVersion:\\s*\"(?<currentValue>v?[\\d.]+)\""
       ],
@@ -15,7 +17,9 @@
     },
     {
       "customType": "regex",
-      "fileMatch": ["^garmin-health-data/values\\.yaml$"],
+      "fileMatch": [
+        "^garmin-health-data/values\\.yaml$"
+      ],
       "matchStrings": [
         "repository: ghcr\\.io/astral-sh/uv\\n\\s+tag: (?<currentValue>\\S+)"
       ],
@@ -26,11 +30,26 @@
   ],
   "packageRules": [
     {
-      "matchDepNames": ["garmin-health-data"],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest",
+        "pin"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "matchDepNames": [
+        "garmin-health-data"
+      ],
       "groupName": "garmin-health-data package"
     },
     {
-      "matchDepNames": ["ghcr.io/astral-sh/uv"],
+      "matchDepNames": [
+        "ghcr.io/astral-sh/uv"
+      ],
       "groupName": "uv runtime image"
     }
   ]

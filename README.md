@@ -40,6 +40,10 @@ database is pulled to a workstation on demand (see below).
   `.github/workflows/helm-release.yaml`, which packages the chart (version
   auto-set to `<base>.<run_number>`) and publishes it + an updated `index.yaml`
   to GitHub Pages.
+- Minor, patch and digest updates automerge once `.github/workflows/lint.yaml`
+  passes. Major updates wait for a human: those are the ones that can change CLI
+  flags or the database schema. Automerging publishes a chart version; it does
+  not touch the cluster, which only moves on `helm upgrade`.
 
 ## Install
 

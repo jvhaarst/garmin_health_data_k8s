@@ -1,0 +1,30 @@
+name: Lint Helm Chart
+
+on:
+  pull_request:
+    paths:
+      - 'garmin-health-data/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Helm
+        uses: azure/setup-helm@v5
+
+      - name: Lint chart
+        run: helm lint garmin-health-data
+
+      # Renders with the maintenance pod on as well, so a bad shell.image bump
+      # fails here rather than at the next `kubectl cp`.
+      - name: Render templates
+        run: |
+          helm template garmin garmin-health-data --namespace garmin
+          helm template garmin garmin-health-data --namespace garmin --set shell.enabled=true
