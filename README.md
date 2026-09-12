@@ -45,6 +45,24 @@ database is pulled to a workstation on demand (see below).
   flags or the database schema. Automerging publishes a chart version; it does
   not touch the cluster, which only moves on `helm upgrade`.
 
+### What makes the lint check binding
+
+A repository ruleset named `main protection` requires the `lint` check on the
+default branch, alongside `deletion` and `non_fast_forward` rules. Without a
+*required* check, `allow_auto_merge` lets a mergeable PR merge the moment it is
+opened, before CI reports — the check would be advisory, not a gate.
+
+The rule pins the check to the GitHub Actions app (`integration_id: 15368`), so
+another integration cannot satisfy it by posting its own check named `lint`.
+
+`bypass_actors` grants the repository-admin role `bypass_mode: always`, so the
+owner keeps direct pushes to `main`. Renovate holds write, not admin, and is
+therefore gated. Drop the bypass if every change should go through a PR.
+
+`strict_required_status_checks_policy` is `false`: a branch need not be rebased
+onto the newest `main` before merging, which on a chart repo buys little beyond
+an extra rebase round-trip per update.
+
 ## Install
 
 ```bash
@@ -152,6 +170,16 @@ then re-seed the volume as above.
 - **No image build.** Adding one would mean a second repository and a registry
   for a package that upstream already publishes; `uvx` with the uv cache on the
   volume is cheaper and keeps the pinned version visible in git.
+- **Publishing is not deploying.** A merged Renovate PR publishes a new chart
+  version and stops there. The cluster moves only on an explicit `helm upgrade`,
+  which is why automerge is safe here.
+- **Renovate merges through its own API call**, not GitHub's auto-merge queue
+  (`autoMergeRequest` stays null on the merged PR, `mergedBy` is
+  `app/renovate`). The ruleset still applies: Renovate cannot merge past a red
+  or missing `lint`.
+- **The very first push to a new repository triggered no workflow run** and the
+  first chart had to be published with `gh workflow run helm-release.yaml`.
+  Every push since has triggered normally, including the Renovate merge.
 
 ## Local development
 
