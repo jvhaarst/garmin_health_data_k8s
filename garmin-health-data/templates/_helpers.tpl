@@ -29,6 +29,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{/* Runtime image that uvx runs in. */}}
 {{- define "garmin-health-data.image" -}}
 {{- printf "%s:%s" .Values.image.repository .Values.image.tag -}}
+{{- with .Values.image.digest }}{{- printf "@%s" . -}}{{- end -}}
 {{- end -}}
 
 {{/* PyPI requirement: values.packageVersion overrides, else the chart appVersion. */}}

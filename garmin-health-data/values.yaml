@@ -6,6 +6,9 @@
 image:
   repository: ghcr.io/astral-sh/uv
   tag: python3.12-bookworm-slim
+  # Pinned by digest too: that tag is rebuilt in place and carries no version,
+  # so the tag alone can never tell Renovate that a new image exists.
+  digest: sha256:e5b65587bce7de595f299855d7385fe7fca39b8a74baa261ba1b7147afa78e58
   pullPolicy: IfNotPresent
 
 # Empty = install the chart's appVersion, the single source of truth Renovate

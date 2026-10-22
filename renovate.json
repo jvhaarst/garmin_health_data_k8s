@@ -6,8 +6,8 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": [
-        "^garmin-health-data/Chart\\.yaml$"
+      "managerFilePatterns": [
+        "/^garmin-health-data/Chart\\.yaml$/"
       ],
       "matchStrings": [
         "appVersion:\\s*\"(?<currentValue>v?[\\d.]+)\""
@@ -17,11 +17,11 @@
     },
     {
       "customType": "regex",
-      "fileMatch": [
-        "^garmin-health-data/values\\.yaml$"
+      "managerFilePatterns": [
+        "/^garmin-health-data/values\\.yaml$/"
       ],
       "matchStrings": [
-        "repository: ghcr\\.io/astral-sh/uv\\n\\s+tag: (?<currentValue>\\S+)"
+        "repository: ghcr\\.io/astral-sh/uv\\n\\s+tag: (?<currentValue>\\S+)\\n(\\s*#[^\\n]*\\n)*\\s+digest: (?<currentDigest>sha256:[a-f0-9]+)"
       ],
       "depNameTemplate": "ghcr.io/astral-sh/uv",
       "datasourceTemplate": "docker",

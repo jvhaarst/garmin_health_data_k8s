@@ -35,7 +35,10 @@ database is pulled to a workstation on demand (see below).
 ```
 
 - `renovate.json` watches the `garmin-health-data` PyPI release (via the chart
-  `appVersion`) and the `ghcr.io/astral-sh/uv` image tag in `values.yaml`.
+  `appVersion`) and the `ghcr.io/astral-sh/uv` image in `values.yaml`. That image
+  is tracked by digest as well as tag: `python3.12-bookworm-slim` carries no
+  version and is rebuilt in place, so the tag alone never changes when Astral
+  publishes a new one.
 - Merging to `main` (or any change under `garmin-health-data/`) triggers
   `.github/workflows/helm-release.yaml`, which packages the chart (version
   auto-set to `<base>.<run_number>`) and publishes it + an updated `index.yaml`
@@ -139,6 +142,7 @@ then re-seed the volume as above.
 |-------|---------|-------|
 | `image.repository` | `ghcr.io/astral-sh/uv` | Runtime only; the tool comes from PyPI. |
 | `image.tag` | `python3.12-bookworm-slim` | Renovate-managed. |
+| `image.digest` | `sha256:e5b65587…` | Renovate-managed. Pins the rebuilt tag to one image. |
 | `packageVersion` | `""` | Empty → uses the chart `appVersion` (Renovate-managed). |
 | `schedule` | `0 9 * * 0` | Sunday 09:00. |
 | `timezone` | `Europe/Amsterdam` | |
