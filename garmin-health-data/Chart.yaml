@@ -5,7 +5,7 @@ type: application
 version: 0.1.0
 # Tracks the garmin-health-data release on PyPI, which the CronJob runs with uvx.
 # Renovate bumps this automatically when a new version is published.
-appVersion: "2.16.0"
+appVersion: "2.17.0"
 keywords:
   - garmin
   - health
